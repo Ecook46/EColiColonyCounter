@@ -1,0 +1,149 @@
+classdef E_Coli_Colony_Counter < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                      matlab.ui.Figure
+        HideCentroidsButton           matlab.ui.control.StateButton
+        DisplayCentroidsButton        matlab.ui.control.StateButton
+        NumberofColoniesCountedLabel  matlab.ui.control.Label
+        ChooseFileButton              matlab.ui.control.StateButton
+        Title                         matlab.ui.control.Label
+        UIAxes                        matlab.ui.control.UIAxes
+    end
+
+    
+    properties (Access = private)
+        path = 0; % File path of most recent image
+        RGB = 0; % image
+        objects = 0; % final objects
+    end
+    
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Code that executes after component creation
+        function startupFcn(app)
+            xlabel(app.UIAxes,"");
+            ylabel(app.UIAxes,"");
+        end
+
+        % Value changed function: ChooseFileButton
+        function ChooseFileButtonValueChanged(app, event)
+            [file,app.path] = uigetfile();  % Allow user to select image file
+            [app.RGB, app.objects] = countColonies(strcat(app.path,file));
+            imshow(app.RGB,'Parent',app.UIAxes);
+            
+            hold(app.UIAxes,"on")
+            % plot centroids of all objects
+            for k=1:size(app.objects,1)
+                objectCen = app.objects(k).Centroid;
+                plot(app.UIAxes, objectCen(1), objectCen(2), "g.")
+   
+            end
+
+            app.NumberofColoniesCountedLabel.Text = strcat("Number of Colonies Counted: ", string(size(app.objects,1))); 
+
+        end
+
+        % Value changed function: DisplayCentroidsButton
+        function DisplayCentroidsButtonValueChanged(app, event)
+            hold(app.UIAxes,"on")
+            % plot centroids of all objects
+            for k=1:size(app.objects,1)
+                objectCen = app.objects(k).Centroid;
+                plot(app.UIAxes, objectCen(1), objectCen(2), "g.")
+   
+            end
+            
+        end
+
+        % Value changed function: HideCentroidsButton
+        function HideCentroidsButtonValueChanged(app, event)
+            hold(app.UIAxes,"off")
+            imshow(app.RGB,'Parent',app.UIAxes);
+            
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.Position = [100 100 640 480];
+            app.UIFigure.Name = 'MATLAB App';
+
+            % Create UIAxes
+            app.UIAxes = uiaxes(app.UIFigure);
+            xlabel(app.UIAxes, 'X')
+            ylabel(app.UIAxes, 'Y')
+            zlabel(app.UIAxes, 'Z')
+            app.UIAxes.Position = [97 63 388 356];
+
+            % Create Title
+            app.Title = uilabel(app.UIFigure);
+            app.Title.FontSize = 18;
+            app.Title.FontWeight = 'bold';
+            app.Title.Position = [205 441 231 23];
+            app.Title.Text = 'Auto Colony Counting Aid';
+
+            % Create ChooseFileButton
+            app.ChooseFileButton = uibutton(app.UIFigure, 'state');
+            app.ChooseFileButton.ValueChangedFcn = createCallbackFcn(app, @ChooseFileButtonValueChanged, true);
+            app.ChooseFileButton.Text = 'Choose File';
+            app.ChooseFileButton.Position = [507 211 108 23];
+
+            % Create NumberofColoniesCountedLabel
+            app.NumberofColoniesCountedLabel = uilabel(app.UIFigure);
+            app.NumberofColoniesCountedLabel.Position = [177 30 292 22];
+            app.NumberofColoniesCountedLabel.Text = 'Number of Colonies Counted:';
+
+            % Create DisplayCentroidsButton
+            app.DisplayCentroidsButton = uibutton(app.UIFigure, 'state');
+            app.DisplayCentroidsButton.ValueChangedFcn = createCallbackFcn(app, @DisplayCentroidsButtonValueChanged, true);
+            app.DisplayCentroidsButton.Text = 'Display Centroids';
+            app.DisplayCentroidsButton.Position = [507 174 109 23];
+
+            % Create HideCentroidsButton
+            app.HideCentroidsButton = uibutton(app.UIFigure, 'state');
+            app.HideCentroidsButton.ValueChangedFcn = createCallbackFcn(app, @HideCentroidsButtonValueChanged, true);
+            app.HideCentroidsButton.Text = 'Hide Centroids';
+            app.HideCentroidsButton.Position = [507 141 108 23];
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = E_Coli_Colony_Counter
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            % Execute the startup function
+            runStartupFcn(app, @startupFcn)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end
